@@ -1,183 +1,110 @@
 # Orbit 🪐
 
-**A minimalist personal bookmark and knowledge organizer.**
-A quiet place to keep useful links (study material, YouTube tutorials, interview prep, recipes, travel ideas), organised into collections and subgroups, tagged, and searchable.
+A calm, personal place to keep useful links (videos, articles, recipes, travel ideas), organised into collections, tagged and searchable.
 
-Orbit is a small learning project built with **React + Vite**, **Node.js + Express**, **SQLite**, **Docker / Docker Compose** and **GitHub Actions**.
-
-> 📘 The full beginner-friendly explanation of every part of the project is in **[`Orbit_Project_Guide.docx`](Orbit_Project_Guide.docx)**.
+Orbit runs on your own computer. Your bookmarks stay private to you.
 
 ---
 
-## Features
+## Use Orbit
 
-- **Dashboard** — greeting, prominent search, pinned quick-access websites, collection cards with pixel-art covers, friendly first-time empty state.
-- **Collections** — create, edit, delete; required name, optional description, choice of 10 pixel-art covers (all drawn in code, no image files or external URLs).
-- **Subgroups** — one level inside a collection (e.g. *YouTube Videos*, *Reading Material*); create, rename, delete. Deleting a subgroup keeps its links as “Unsorted”.
-- **Bookmarks** — title, URL, optional note, collection, optional subgroup, optional tags; add, edit, delete (with confirmation), open in a new tab, copy link.
-- **URL validation** in the browser **and** the API: only `http://` / `https://`; duplicates are detected after normalisation (`http://www.Example.com/docs/` = `https://example.com/docs`).
-- **Tags** — reusable across collections, created and removed automatically; click a tag to filter.
-- **Search & filters** — search title, URL and note; filter by collection, subgroup and tag; all combine; one “Clear filters” button.
-- **Quick access** — up to 8 pinned shortcuts (YouTube, GitHub, Notion…), independent of collections; add, edit, pin/unpin, remove.
-- Responsive layout, keyboard focus styles, labelled controls, native `<dialog>` modals.
+### 1. Install Docker Desktop
 
-Out of scope on purpose: accounts/login, cloud sync, scraping, favicons or previews from the internet, image uploads, deeper nesting.
+Download it from https://www.docker.com/products/docker-desktop/, install it and open it.
+Wait until it says **Engine running**.
 
-## Project structure
+### 2. Download Orbit
 
-```
-orbit-bookmark-organizer/
-├── backend/                  Express REST API + SQLite
-│   ├── src/
-│   │   ├── server.js         entry point: reads env vars, opens DB, starts listening
-│   │   ├── app.js            builds the Express app, routes, error handler
-│   │   ├── db.js             opens SQLite, schema + migrations (PRAGMA user_version)
-│   │   ├── validation.js     input checks, URL normalisation, HttpError
-│   │   └── routes/           collections, subgroups, bookmarks, tags, shortcuts
-│   ├── tests/                Vitest + Supertest (in-memory database)
-│   ├── Dockerfile
-│   └── .dockerignore
-├── frontend/                 React + Vite single-page app
-│   ├── src/
-│   │   ├── App.jsx           state, data loading, dialogs
-│   │   ├── components/       Sidebar, Dashboard, CollectionPage, forms, ...
-│   │   ├── art/              pixel-art sprites (text) and cover scenes
-│   │   ├── lib/              api.js (fetch wrapper), text helpers + tests
-│   │   └── styles.css        all styling, palette in CSS variables
-│   ├── nginx.conf            serves the build, proxies /api to the backend
-│   ├── Dockerfile            multi-stage: Node builds, nginx serves
-│   └── .dockerignore
-├── compose.yaml              runs both containers + the named volume
-├── .github/workflows/ci.yml  test → Docker build & smoke test → publish to GHCR
-├── Orbit_Project_Guide.docx  the detailed project guide
-└── .env.example              optional settings for running the backend without Docker
+Open **PowerShell** (Windows) or **Terminal** (Mac) and copy-paste:
+
+**Windows**
+```powershell
+mkdir $HOME\orbit
+cd $HOME\orbit
+curl.exe -o compose.yaml https://raw.githubusercontent.com/bhavyaparti11/orbit-bookmark-organizer/main/compose.ghcr.yaml
 ```
 
-## Run with Docker (recommended)
+**Mac**
+```bash
+mkdir ~/orbit
+cd ~/orbit
+curl -o compose.yaml https://raw.githubusercontent.com/bhavyaparti11/orbit-bookmark-organizer/main/compose.ghcr.yaml
+```
 
-Prerequisite: [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
+### 3. Start Orbit
 
 ```bash
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
 
-Open **http://localhost:8080**. Stop with `Ctrl+C`.
+Open **http://localhost:8080** in your browser. 🎉
 
-| Task | Command |
+### Everyday commands
+
+Run these from your `orbit` folder (`cd $HOME\orbit` on Windows, `cd ~/orbit` on Mac):
+
+| I want to… | Command |
 |---|---|
-| Start in the background | `docker compose up --build -d` |
-| See what is running | `docker compose ps` |
-| Follow the logs | `docker compose logs -f` (or `docker compose logs -f backend`) |
-| Stop (containers removed, **data kept**) | `docker compose down` |
-| Restart one service | `docker compose restart backend` |
-| Rebuild after changing code | `docker compose up --build -d` |
-| Look at the data volume | `docker volume inspect orbit_orbit-data` |
-| Back up the database | `docker compose cp backend:/app/data/orbit.db ./orbit-backup.db` |
+| Stop Orbit | `docker compose down` |
+| Start it again | `docker compose up -d` |
+| Get the newest version | `docker compose pull` then `docker compose up -d` |
 
-**Check that data persists:** add a collection, run `docker compose down`, then `docker compose up -d` and refresh — it is still there. The SQLite file lives in the named volume `orbit_orbit-data`, not inside the container.
+Your bookmarks are kept when you stop, restart or update Orbit.
 
-> ⚠️ **Destructive:** `docker compose down -v` (or `docker volume rm orbit_orbit-data`) deletes the volume and **all your saved bookmarks**. Back up first.
+> ⚠️ Never run `docker compose down -v`. The `-v` deletes all your bookmarks.
 
-How it fits together:
+**Page won't open?** Make sure Docker Desktop says *Engine running*, then run `docker compose up -d` again.
 
-```
- your browser ──► localhost:8080 ──► [frontend container: nginx]
-                                        │  /            → React files
-                                        │  /api/...     → http://backend:3000
-                                        ▼
-                                     [backend container: Express] ──► /app/data/orbit.db
-                                                                        (named volume orbit-data)
-```
+---
 
-Only port 8080 is published (and only on `127.0.0.1`); the backend is reachable only inside the Compose network.
+## For developers
 
-## Run without Docker (development)
+**Built with:** React + Vite (frontend), Node.js + Express (API), SQLite (database), Docker Compose, GitHub Actions.
+The full explanation of how everything works is in **[`Orbit_Project_Guide.docx`](Orbit_Project_Guide.docx)**.
 
-Prerequisite: Node.js 22+.
+### Run from the source code
 
 ```bash
-# terminal 1 — API on http://localhost:3000 (database: backend/data/orbit.db)
-cd backend
-npm install
-npm run dev
-
-# terminal 2 — React dev server on http://localhost:5173 (proxies /api to :3000)
-cd frontend
-npm install
-npm run dev
+git clone https://github.com/bhavyaparti11/orbit-bookmark-organizer.git
+cd orbit-bookmark-organizer
+docker compose up --build -d
 ```
 
-Open **http://localhost:5173**. Optional settings: see `.env.example` (`PORT`, `DATABASE_PATH`).
+Open http://localhost:8080. After changing code, run `docker compose up --build -d` again.
 
-## Tests
+### Run without Docker
+
+Needs Node.js 22. Use two terminals:
 
 ```bash
-cd backend  && npm test     # 37 API + validation tests (Vitest + Supertest)
-cd frontend && npm test     # 24 tests: URL/tag helpers, pixel-art and cover data
+cd backend && npm install && npm run dev     # API on http://localhost:3000
+cd frontend && npm install && npm run dev    # app on http://localhost:5173
 ```
 
-Backend tests use a fresh **in-memory** SQLite database per test, so they never touch your real data.
-
-## API
-
-All responses are JSON. Errors look like `{ "error": "message" }` with status 400 (invalid input), 404 (not found) or 409 (duplicate / limit reached).
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/health` | health check |
-| GET / POST | `/api/collections` | list (with subgroups and counts) / create |
-| GET / PUT / DELETE | `/api/collections/:id` | read / update / delete (cascades) |
-| POST | `/api/collections/:id/subgroups` | create a subgroup |
-| PUT / DELETE | `/api/subgroups/:id` | rename / delete |
-| GET | `/api/bookmarks?q=&collectionId=&subgroupId=&tag=` | list, search and filter (`subgroupId=none` = unsorted) |
-| POST | `/api/bookmarks` | create |
-| GET / PUT / DELETE | `/api/bookmarks/:id` | read / update / delete |
-| GET | `/api/tags` | tags in use, with counts |
-| GET / POST | `/api/shortcuts` | list / create (max 8 pinned) |
-| PUT / DELETE | `/api/shortcuts/:id` | update (incl. pin/unpin) / delete |
-
-## CI/CD (GitHub Actions)
-
-`.github/workflows/ci.yml` runs on pushes and pull requests to `main`:
-
-1. **test** — `npm ci`, backend tests, frontend tests, frontend build (Node 22).
-2. **docker** — `docker compose build`, start the stack, smoke-test `/api/health`, the page and a create/read through nginx.
-3. **publish** — only on pushes to `main`: pushes `ghcr.io/<owner>/orbit-backend` and `ghcr.io/<owner>/orbit-frontend` tagged `sha-<commit>` and `latest`, using the built-in `GITHUB_TOKEN` (no secrets to configure).
-
-The app never depends on GHCR — `docker compose up --build` always builds locally. To run the **published** images instead (the newest version from `main`):
+### Tests
 
 ```bash
-docker compose -f compose.ghcr.yaml pull     # download the latest images
-docker compose -f compose.ghcr.yaml up -d    # start (or update) the app
+cd backend && npm test
+cd frontend && npm test
 ```
 
-Both compose files use the same project name and volume, so your bookmarks are shared between them.
+### How updates reach users
 
-## Publish this repository to GitHub
+Every push to `main` runs `.github/workflows/ci.yml`:
 
-The local repository is already initialised on `main` with a first commit. With the [GitHub CLI](https://cli.github.com/):
+1. Runs the tests and builds the app.
+2. Builds the Docker images and checks the app starts.
+3. Publishes the images to GitHub Container Registry (`ghcr.io/bhavyaparti11/orbit-backend` and `orbit-frontend`).
 
-```bash
-winget install --id GitHub.cli     # once (Windows)
-gh auth login                      # once, in the browser
-gh repo create orbit-bookmark-organizer --private --source . --remote origin --push
+When all three steps are green, users get the new version with `docker compose pull` and `docker compose up -d`.
+
+### Project layout
+
 ```
-
-Or create an empty repository named `orbit-bookmark-organizer` on github.com (no README), then:
-
-```bash
-git remote add origin https://github.com/<your-username>/orbit-bookmark-organizer.git
-git push -u origin main
+backend/              Express API + SQLite (src/, tests/, Dockerfile)
+frontend/             React app (src/, nginx.conf, Dockerfile)
+compose.yaml          builds and runs Orbit from the source code
+compose.ghcr.yaml     runs Orbit from the published images
+.github/workflows/    CI/CD pipeline
 ```
-
-After the first push, open the **Actions** tab to watch the pipeline. Published images appear under your profile → **Packages**.
-
-## Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| `port is already allocated` for 8080 | Another program uses 8080. Change `"127.0.0.1:8080:80"` to e.g. `"127.0.0.1:8081:80"` in `compose.yaml`. |
-| Page says “Orbit cannot reach its server” | `docker compose ps` — is the backend `healthy`? Check `docker compose logs backend`. In dev mode, start the backend (`npm run dev` in `backend/`). |
-| `Cannot connect to the Docker daemon` | Start Docker Desktop and wait until it says “running”. |
-| Code changes don’t show in Docker | Rebuild: `docker compose up --build -d`. |
-| `npm install` fails building `better-sqlite3` | Use Node.js 22 LTS (prebuilt binaries are downloaded for it). |
