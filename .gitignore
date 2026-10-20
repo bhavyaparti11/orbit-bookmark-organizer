@@ -1,0 +1,29 @@
+# Dependencies (re-created by "npm ci")
+node_modules/
+
+# Build output (re-created by "npm run build")
+frontend/dist/
+
+# SQLite databases and your personal data — never commit these
+backend/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and editor/OS clutter
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Word's temporary lock file while the guide is open
+~$*.docx

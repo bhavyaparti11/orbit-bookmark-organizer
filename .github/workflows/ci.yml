@@ -1,0 +1,152 @@
+# ---------------------------------------------------------------
+# Orbit CI/CD pipeline (runs on GitHub's computers, not yours)
+#
+#   Job 1  test     install dependencies, run backend + frontend tests,
+#                   build the frontend
+#   Job 2  docker   build both Docker images with Compose, start them,
+#                   and smoke-test the running app through nginx
+#   Job 3  publish  (pushes to main only) build and push the images to
+#                   GitHub Container Registry, ghcr.io
+#
+# Each job only starts if the job before it passed ("needs:").
+# ---------------------------------------------------------------
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # adds a "Run workflow" button in the Actions tab
+
+# By default the workflow may only read the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the older, still-running pipeline.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      # npm ci installs exactly the versions in package-lock.json.
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend tests (Vitest + Supertest)
+        working-directory: backend
+        run: npm test
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests (Vitest)
+        working-directory: frontend
+        run: npm test
+
+      - name: Build the frontend
+        working-directory: frontend
+        run: npm run build
+
+  docker:
+    name: Build and smoke-test Docker images
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Build the images
+        run: docker compose build
+
+      # --wait returns once the backend health check passes and nginx is running.
+      - name: Start the app
+        run: docker compose up -d --wait
+
+      - name: "Smoke test: health check through nginx"
+        run: curl -fsS http://localhost:8080/api/health
+
+      - name: "Smoke test: the React app is served"
+        run: curl -fsS http://localhost:8080/ | grep -q "<title>Orbit</title>"
+
+      - name: "Smoke test: create and read data through the API"
+        run: |
+          curl -fsS -X POST http://localhost:8080/api/collections \
+            -H "Content-Type: application/json" \
+            -d '{"name":"CI check","cover":"comet"}'
+          curl -fsS http://localhost:8080/api/collections | grep -q "CI check"
+
+      - name: Show container logs
+        if: always()
+        run: docker compose logs
+
+      # -v also deletes the volume. That is fine here: this is a throwaway
+      # GitHub runner, not your computer.
+      - name: Stop and clean up
+        if: always()
+        run: docker compose down -v
+
+  publish:
+    name: Publish images to GHCR
+    needs: docker
+    # Only for pushes to main — never for pull requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # allows pushing to ghcr.io with the built-in GITHUB_TOKEN
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      # GHCR image names must be lower case.
+      - name: Work out the image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/orbit-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }} # created automatically, never printed
+
+      # Tags: sha-<short commit id> for every build, and "latest" on main.
+      - name: Choose image tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push the ${{ matrix.service }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

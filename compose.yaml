@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------
+# Orbit with Docker Compose
+#
+#   Start:    docker compose up --build        (add -d to run in the background)
+#   Open:     http://localhost:8080
+#   Stop:     docker compose down              (your data is kept)
+#
+# Two containers on one private network:
+#   frontend  nginx serving the React app; forwards /api/* to the backend
+#   backend   Express API; stores the SQLite file in the "orbit-data" volume
+# ---------------------------------------------------------------
+
+name: orbit
+
+services:
+  backend:
+    build: ./backend
+    image: orbit-backend:local
+    environment:
+      PORT: "3000"
+      DATABASE_PATH: /app/data/orbit.db
+    volumes:
+      # The named volume keeps the database when containers are removed.
+      - orbit-data:/app/data
+    # No "ports:" here — the backend is only reachable from inside the
+    # Compose network (by the frontend), not directly from your computer.
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: orbit-frontend:local
+    ports:
+      # host port 8080 -> container port 80. 127.0.0.1 = only this computer.
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy   # wait for the backend's HEALTHCHECK
+    restart: unless-stopped
+
+volumes:
+  orbit-data:

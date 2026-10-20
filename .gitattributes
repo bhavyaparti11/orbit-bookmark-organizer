@@ -1,0 +1,5 @@
+# Keep Unix line endings (LF) in the repository and working copy, so files
+# copied into Linux containers (nginx.conf, Dockerfiles, scripts) behave the same everywhere.
+* text=auto eol=lf
+*.docx binary
+*.png binary
