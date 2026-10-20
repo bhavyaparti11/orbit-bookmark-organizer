@@ -8,13 +8,20 @@
 # Two containers on one private network:
 #   frontend  nginx serving the React app; forwards /api/* to the backend
 #   backend   Express API; stores the SQLite file in the "orbit-data" volume
+#
+# The version shown in the sidebar is "local" unless APP_VERSION is set
+# (GitHub Actions sets it to sha-<commit>).
 # ---------------------------------------------------------------
 
 name: orbit
 
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        APP_VERSION: ${APP_VERSION:-local}
+        BUILD_DATE: ${BUILD_DATE:-}
     image: orbit-backend:local
     environment:
       PORT: "3000"
@@ -27,7 +34,11 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        APP_VERSION: ${APP_VERSION:-local}
+        BUILD_DATE: ${BUILD_DATE:-}
     image: orbit-frontend:local
     ports:
       # host port 8080 -> container port 80. 127.0.0.1 = only this computer.

@@ -12,6 +12,12 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# Version information from GitHub Actions (a local build is just "local").
+# Vite only exposes variables starting with VITE_ to the browser code, and
+# bakes them into the built files.
+ARG APP_VERSION=local
+ARG BUILD_DATE=""
+ENV VITE_APP_VERSION=${APP_VERSION}     VITE_BUILD_DATE=${BUILD_DATE}
 RUN npm run build
 
 # ---- Stage 2: serve them with nginx ----

@@ -25,6 +25,13 @@ RUN npm ci --omit=dev && npm cache clean --force
 # 4. Copy the application code.
 COPY src ./src
 
+# 4b. Version information. GitHub Actions passes these in as build arguments
+#     (e.g. APP_VERSION=sha-1a2b3c4); a local build is just "local".
+#     ENV keeps them available when the container runs.
+ARG APP_VERSION=local
+ARG BUILD_DATE=""
+ENV APP_VERSION=${APP_VERSION}     BUILD_DATE=${BUILD_DATE}
+
 # 5. Run as the unprivileged "node" user (it comes with the image) and make
 #    sure it owns the data folder where SQLite writes its file.
 RUN mkdir -p /app/data && chown node:node /app/data

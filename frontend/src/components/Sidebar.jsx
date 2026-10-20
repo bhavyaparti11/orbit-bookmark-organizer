@@ -1,3 +1,4 @@
+import { APP_VERSION, BUILD_DATE, versionLabel } from '../lib/version.js';
 import { Icon } from './Icon.jsx';
 import { CoverArt, PixelSprite } from './PixelArt.jsx';
 
@@ -69,6 +70,9 @@ export function Sidebar({ collections, tags, openCollectionId, activeTag, onHome
         <PixelSprite name="planet" scale={2} className="sky-2" />
         <PixelSprite name="star" scale={2} className="sky-3" />
         <span className="sky-caption">a quiet little library</span>
+        <span className="sky-version" title="The version of Orbit you are running">
+          {versionLabel(APP_VERSION, BUILD_DATE)}
+        </span>
       </div>
     </aside>
   );

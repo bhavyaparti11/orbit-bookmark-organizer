@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toQueryString } from './api.js';
 import { addTag, greeting, isValidHttpUrl, plural, siteName } from './text.js';
+import { versionLabel } from './version.js';
 
 describe('isValidHttpUrl', () => {
   it('accepts full http and https links', () => {
@@ -47,5 +48,16 @@ describe('display helpers', () => {
   it('pluralises counts', () => {
     expect(plural(1, 'link')).toBe('1 link');
     expect(plural(3, 'link')).toBe('3 links');
+  });
+});
+
+describe('versionLabel', () => {
+  it('shows the version and the build day', () => {
+    expect(versionLabel('sha-1a2b3c4', '2026-10-20T14:05Z')).toBe('sha-1a2b3c4 · 20 Oct 2026');
+  });
+
+  it('shows only the version when there is no valid build date', () => {
+    expect(versionLabel('dev', '')).toBe('dev');
+    expect(versionLabel('local', 'not a date')).toBe('local');
   });
 });

@@ -5,6 +5,7 @@
 #                   build the frontend
 #   Job 2  docker   build both Docker images with Compose, start them,
 #                   and smoke-test the running app through nginx
+#                   (including that it reports the right version)
 #   Job 3  publish  (pushes to main only) build and push the images to
 #                   GitHub Container Registry, ghcr.io
 #
@@ -75,6 +76,14 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v5
 
+      # The version is "sha-" + the first 7 characters of the commit id.
+      # Writing to $GITHUB_ENV makes these variables available to later steps,
+      # and compose.yaml passes them to the Dockerfiles as build arguments.
+      - name: Work out the version
+        run: |
+          echo "APP_VERSION=sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%MZ)" >> "$GITHUB_ENV"
+
       - name: Build the images
         run: docker compose build
 
@@ -84,6 +93,9 @@ jobs:
 
       - name: "Smoke test: health check through nginx"
         run: curl -fsS http://localhost:8080/api/health
+
+      - name: "Smoke test: the backend reports this commit's version"
+        run: curl -fsS http://localhost:8080/api/health | grep -q "\"version\":\"$APP_VERSION\""
 
       - name: "Smoke test: the React app is served"
         run: curl -fsS http://localhost:8080/ | grep -q "<title>Orbit</title>"
@@ -121,10 +133,15 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v5
 
-      # GHCR image names must be lower case.
-      - name: Work out the image name
+      # GHCR image names must be lower case. The version matches the sha- tag.
+      - name: Work out the image name and version
         id: image
-        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/orbit-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+        run: |
+          {
+            echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/orbit-${{ matrix.service }}"
+            echo "version=sha-${GITHUB_SHA::7}"
+            echo "build_date=$(date -u +%Y-%m-%dT%H:%MZ)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -150,3 +167,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Bakes the version into the image (shown in the sidebar and /api/health).
+          build-args: |
+            APP_VERSION=${{ steps.image.outputs.version }}
+            BUILD_DATE=${{ steps.image.outputs.build_date }}

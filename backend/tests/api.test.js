@@ -41,7 +41,13 @@ describe('health check', () => {
   it('reports that the API and database are working', async () => {
     const res = await api.get('/api/health');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body).toEqual({ status: 'ok', version: 'dev', buildDate: '' });
+  });
+
+  it('reports which version of Orbit is running', async () => {
+    const versioned = request(createApp(db, { version: 'sha-1a2b3c4', buildDate: '2026-10-20T14:05Z' }));
+    const res = await versioned.get('/api/health');
+    expect(res.body).toMatchObject({ version: 'sha-1a2b3c4', buildDate: '2026-10-20T14:05Z' });
   });
 
   it('returns a JSON 404 for unknown API addresses', async () => {

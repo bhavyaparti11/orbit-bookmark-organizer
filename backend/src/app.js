@@ -1,5 +1,7 @@
 // Builds the Express application. The database is passed in, so the real
 // server can use the file on disk and the tests can use a temporary one.
+// `version` and `buildDate` describe which build of Orbit is running; they
+// are reported by the health check.
 
 import express from 'express';
 import { bookmarksRouter } from './routes/bookmarks.js';
@@ -8,7 +10,7 @@ import { shortcutsRouter } from './routes/shortcuts.js';
 import { subgroupsRouter } from './routes/subgroups.js';
 import { tagsRouter } from './routes/tags.js';
 
-export function createApp(db) {
+export function createApp(db, { version = 'dev', buildDate = '' } = {}) {
   const app = express();
 
   // Read JSON request bodies into req.body.
@@ -16,7 +18,7 @@ export function createApp(db) {
 
   app.get('/api/health', (req, res) => {
     db.prepare('SELECT 1').get(); // fails (and returns 500) if the database is unreachable
-    res.json({ status: 'ok' });
+    res.json({ status: 'ok', version, buildDate });
   });
 
   app.use('/api/collections', collectionsRouter(db));
