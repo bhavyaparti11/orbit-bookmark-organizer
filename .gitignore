@@ -27,3 +27,7 @@ Thumbs.db
 
 # Word's temporary lock file while the guide is open
 ~$*.docx
+
+# Personal project guide - kept on this laptop only, never published
+Orbit_Project_Guide.docx
+docs/

@@ -61,7 +61,6 @@ Your bookmarks are kept when you stop, restart or update Orbit.
 ## For developers
 
 **Built with:** React + Vite (frontend), Node.js + Express (API), SQLite (database), Docker Compose, GitHub Actions.
-The full explanation of how everything works is in **[`Orbit_Project_Guide.docx`](Orbit_Project_Guide.docx)**.
 
 ### Run from the source code
 
@@ -107,5 +106,4 @@ frontend/             React app (src/, nginx.conf, Dockerfile)
 compose.yaml          builds and runs Orbit from the source code
 compose.ghcr.yaml     runs Orbit from the published images
 .github/workflows/    CI/CD pipeline
-docs/guide/           generates Orbit_Project_Guide.docx (npm install && npm run build)
 ```
