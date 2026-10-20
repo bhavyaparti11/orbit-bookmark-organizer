@@ -1,0 +1,33 @@
+# ---------------------------------------------------------------
+# Run Orbit from the images PUBLISHED to GitHub Container Registry
+# (built and pushed by GitHub Actions on every push to main), instead
+# of building them from the source code like compose.yaml does.
+#
+#   Get the newest version:  docker compose -f compose.ghcr.yaml pull
+#   Start / update:          docker compose -f compose.ghcr.yaml up -d
+#   Open:                    http://localhost:8080
+#
+# The project name "orbit" and volume "orbit-data" are the same as in
+# compose.yaml, so both files use the same saved bookmarks.
+# ---------------------------------------------------------------
+
+name: orbit
+
+services:
+  backend:
+    image: ghcr.io/bhavyaparti11/orbit-backend:latest
+    volumes:
+      - orbit-data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/bhavyaparti11/orbit-frontend:latest
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  orbit-data:

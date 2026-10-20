@@ -3,7 +3,7 @@ import { Icon } from './Icon.jsx';
 import { CoverArt, PixelSprite } from './PixelArt.jsx';
 import { QuickAccess } from './Shortcuts.jsx';
 
-const SUGGESTIONS = ['Computer Networks', 'Interview Prep', 'Recipes', 'Travel Ideas'];
+const SUGGESTIONS = ['Streaming', 'Recipes', 'Travel', 'Reading List', 'Shopping', 'Learning'];
 
 export function Welcome({ hasCollections, onAddBookmark }) {
   return (
@@ -46,7 +46,7 @@ export function Dashboard({ collections, shortcuts, onOpenCollection, onNewColle
             <PixelSprite name="saturn" scale={5} />
             <h3>Your orbit is empty — for now.</h3>
             <p>
-              Start with a collection: a home for one topic, like your networking notes or recipes to try. Then save
+              Start with a collection: a home for one topic, like shows to stream or recipes to try. Then save
               links into it.
             </p>
             <button type="button" className="button button-primary" onClick={() => onNewCollection()}>

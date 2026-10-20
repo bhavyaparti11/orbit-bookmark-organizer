@@ -144,7 +144,14 @@ All responses are JSON. Errors look like `{ "error": "message" }` with status 40
 2. **docker** — `docker compose build`, start the stack, smoke-test `/api/health`, the page and a create/read through nginx.
 3. **publish** — only on pushes to `main`: pushes `ghcr.io/<owner>/orbit-backend` and `ghcr.io/<owner>/orbit-frontend` tagged `sha-<commit>` and `latest`, using the built-in `GITHUB_TOKEN` (no secrets to configure).
 
-The app never depends on GHCR — `docker compose up --build` always builds locally. To run the published images instead, replace `build:` with `image: ghcr.io/<owner>/orbit-backend:latest` (and the frontend equivalent). If the packages are private, run `docker login ghcr.io` first.
+The app never depends on GHCR — `docker compose up --build` always builds locally. To run the **published** images instead (the newest version from `main`):
+
+```bash
+docker compose -f compose.ghcr.yaml pull     # download the latest images
+docker compose -f compose.ghcr.yaml up -d    # start (or update) the app
+```
+
+Both compose files use the same project name and volume, so your bookmarks are shared between them.
 
 ## Publish this repository to GitHub
 

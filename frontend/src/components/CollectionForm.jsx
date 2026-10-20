@@ -23,7 +23,7 @@ export function CollectionForm({ collection, initialName = '', onSubmit, onClose
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Computer Networks"
+            placeholder="e.g. Recipes"
             maxLength={60}
             autoFocus
             required
