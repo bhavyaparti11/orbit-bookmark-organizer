@@ -107,4 +107,5 @@ frontend/             React app (src/, nginx.conf, Dockerfile)
 compose.yaml          builds and runs Orbit from the source code
 compose.ghcr.yaml     runs Orbit from the published images
 .github/workflows/    CI/CD pipeline
+docs/guide/           generates Orbit_Project_Guide.docx (npm install && npm run build)
 ```
